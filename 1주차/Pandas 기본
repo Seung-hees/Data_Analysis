@@ -1,0 +1,281 @@
+01_pandas 공부
+
+-pd.Series -> list 1차원 배열 생성
+-pd.DataFrame -> 2차원 배열 (행렬) 생성
+열반환 [0] / 행반환 .loc[0]
+
+컬럼명 지정 : pd.DataFrame(transaction,columns =["date", 'price', 'state'])
+또 다르게, 표현
+
+딕셔너리+리스트
+
+transaction = {
+    'date': ['2017-01-01', '2017-01-03', '2017-01-10'],
+    'price': [500, 700, 200],
+    'state': ['confirmed', 'confirmed', 'canceled'],
+}
+
+transaction = [
+    {'date': '2017-01-01', 'price': 500, 'state': 'confirmed'},
+    {'date': '2017-01-03', 'price': 700, 'state': 'confirmed'},
+    {'date': '2017-01-10', 'price': 200, 'state': 'canceled'},
+]
+
+인덱스 지정 :
+names = ["Kang", "Kim", "Choi", "Park", "Lee", "Yoon", "Jang", "Ko"] 
+pd.DataFrame(transaction, index = names)
+
+인덱스 이름 지정:
+transaction = pd.read_csv(transaction_url, index_col="Name")
+
+
+-데이터구조의 데이터 타입 : .dtypes / 문자열>실수형>정수형
+(변환).astype('int')
+
+-판다스에서 빈값을 넣고 싶을 경우 :
+import numpy as np => NaN 개념 사용 
+np.nan 이 값.(실수형) 
+
+판다스 DataFrame은 .index,.columns,.values 를 활용해 불러옴.
+인덱스 값
+type(.index)=index
+컬럼 값
+type(.columns)=index
+값
+type(.values)=numpy
+
+데이터의 상위 5개 가져오기 - .head()/ 하위 5개 가져오기- .tail()
+상위 n개 .head(n)/하위 n개 .tail(n)
+
+transaction["date"].head()에서 date 컬럼을 가진 상위 5개의 데이터
+
+#정렬하기
+1) index 정렬
+행이 자동으로 숫자순, 문자순으로 정렬.
+-.sort_index()
+내림차순으로 정렬
+-.sort_index(ascending=False)
+
+2) column 정렬
+컬럼의 값이 자동으로 숫자순, 문자순으로 정렬
+-.sort_index(axis=1)
+컬럼의 값을 정렬 방식을 내림차순으로 바꿈
+-.sort_index(axis=1,ascending=False)
+
+3) 특정 컬럼값을 기준으로 정렬
+.sort_values(by="amount")//컬럼값
+특정 컬럼값을 내림차순으로 정렬
+.sort_values(by="amount", ascending=False)
+여러 개의 컬럼값을 기준으로 정렬
+.sort_values(by = ["date", "amount"])
+내림차순
+.sort_values(by = ["date", "amount"], ascending = False)
+여러 개의 컬럼값으로 정렬하되, 컬럼값마다 오름차순과 내림차순 정렬이 다른 경우.
+.sort_values(by = ["date", "amount"], ascending = [True, False])
+
+#기본 연산
+해당되는 컬럼의 
+평균
+transaction["amount"].mean()
+최소값
+transaction["amount"].min()
+최대값
+transaction["amount"].max()
+각 컬럼에 대한 통계
+transaction.describe()
+해당되는 컬럼의 중복되는 값 제거/ 컬럼의 값 종류
+transaction["result"].unique()
+해당되는 컬럼의 값의 수
+transaction["result"].value_counts()
+
+--------pivot table(데이터를 요약하는 통계표/가로 세로 재배치)
+-result 의 컬럼의 각각 unique 값에 대한 amount 에 대한 평균(default) 값.
+pd.pivot_table(transaction, index='result',values='amount')
+여러개도 가능
+pd.pivot_table(transaction, index=["date", "result"], values="amount")
+
+-sum 을 지정하면 평균이 아닌 sum 이 출력됨.
+pd.pivot_table(transaction, index="result", values="amount", aggfunc='sum')
+
+-평균과 누적값을 동시에 출력하는 것이 가능.
+import numpy as np
+pd.pivot_table(transaction, index="result", values="amount", aggfunc=[np.mean, np.sum])
+
+#group by(pivot table과 거의 유사)
+데이터프레임의 특정 컬럼을 그룹화 하는 기능
+실제 결과에 대한 전체 금액의 평균을 구하기.
+transaction.groupby("result")["amount"].mean()
+평균이 아닌 누적값 계산
+transaction.groupby("result")["amount"].sum()
+하나의 컬럼이 아닌 두개이상의 컬럼을 사용하고 싶다면 리스트 사용
+transaction.groupby(["date", "result"])["amount"].mean()
+
+
+#열 접근
+transaction["date"]
+transaction[["date", "amount"]]
+
+=>
+columns = ["date", "amount"]
+transaction[columns]
+
+#행 접근
+transaction.loc["Kang"]
+transaction.loc[["Kang", "Kim", "Choi"]]
+=>
+names = ["Kang", "Kim", "Choi"]
+transaction.loc[names]
+
+-start:finish
+transaction["Kang":"Choi"]
+
+#행렬 동시 접근
+-[열][행] 속도가 느려서 권장하지 않음.
+transaction["date"]["Kang"]
+
+-행과 열 순으로 접근
+transaction.loc["Kang", "date"]
+=>transaction.at["Kang", "date"]
+하지만 at은 행과 열이 여러개 인경우 동작하지 않음.
+ex)transaction.at[["Kang", "Kim", "Choi"], "date"](X)
+transaction.loc[["Kang", "Kim", "Choi"], "date"](O)
+
+-리스트 할당해서 접근하는 방법
+names = ["Kang", "Kim", "Choi"]
+columns = ["date", "amount"]
+
+transaction.loc[names, columns]
+
+-iloc 사용.행렬을 접근할 때 순서대로 접근하는 방법.
+첫번째 행만 출력
+transaction.iloc[0]
+첫번째 행과 열 출력
+transaction.iloc[0, 0]
+
+transaction.iloc[[0, 1, 3], [1, 2]]
+iat 도 존재하지만 이 역시 행과 열이 여러개인 경우 동작하지 않음.
+
+#색인
+값이 존재하는 지 확인.
+transaction[transaction["date"] (==/!=/>/<,etc) "2017-01-01"]
+
+여러 개의 특정 값이 존재하는 지 알고 싶다면, .isin 이라는 함수 사용.
+date_candidate = ["2017-01-01", "2017-01-05", "2017-01-09"]
+transaction[transaction["date"].isin(date_candidate)]
+*반대되는 값을 가져오고 싶을 경우 앞에 ~ 물결.
+transaction[~transaction["date"].isin(date_candidate)]
+
+#컬럼 추가하기 & 수정하기
+
+transaction["card-holder"] = "KB Card"
+
+-컬럼에 서로 다른 값을 넣고 싶을 땐, 일단 갯수만 맞으면 무조건 들어갑니다.
+transaction["order"] = [1, 2, 3, 4, 5, 6, 7, 8]
+
+-색인 후, 값 집어넣기.
+transaction.loc[transaction["amount"] >= 500, "VIP"] = True
+transaction.loc[transaction["amount"] < 500, "VIP"] = False
+
+#데이터 삭제하기.
+
+-행 삭제하기.
+transaction.drop("Kang", axis=0)
+-열 삭제하기.
+transaction.drop("date", axis=1)
+
+#apply
+반복문과 유사한 방식으로 동작.
+함수 적용.
+
+# is_vip라는 이름의 함수를 정의합니다.
+# 이 함수는 결제금액(amount)이 500달러를 넘어가면 True, 넘어가지 않으면 False를 반환합니다.
+def is_vip(amount):
+    return amount >= 500
+    
+# 이 함수를 amount에 apply 로 적용하면
+# 총 6개의 amount값을 마치 반복문을 돌리듯이 돌아갑니다.
+transaction["VIP"] = transaction["amount"].apply(is_vip)
+
+***동일 코드
+transaction["VIP"] = transaction["amount"].apply(lambda amount: amount >= 500)
+
+-열에 적용.
+transaction.loc["Kang"].apply(lambda x: x == 500)
+
+
+-여러개의 컬럼에 동시에 적용.(axis=1)
+transaction["VIP"] = transaction.apply(is_vip, axis=1)
+
+#여러 개의 데이터를 하나로 합치기.
+# pd.concat으로 두 개의 DataFrame을 합칠 수 있습니다.
+transaction = pd.concat([transaction01, transaction02])
+
+또는
+transaction = transaction01.append([transaction02])
+
+-인덱스 동일하고 컬럼을 추가해 줄 경우.
+#pd.concat()에 axis=1 파라미터를 추가하여 transaction02와 how2 데이터를 합쳐주세요.
+pd.concat([transaction02, how2], axis=1)
+
+
+**서로 다른 형태의 데이터를 하나로 합치기.
+pd.merge 사용하기 두 데이터프레임에서 겹치는 컬럼을 자동적으로 찾아서 그에 맞는 데이터를 합쳐줌.
+겹치지 않은 것은 자동적으로 삭제.
+
+#pd.merge를 이용해 transaction과 user 데이터를 합쳐주세요.
+pd.merge(transaction, user)
+
+<INNER,RIGHT,OUTER 조인>
+pd.merge(transaction, user, how='inner')
+transaction.merge(user, how='inner')
+
+# how='outer' 옵션은 transaction에서도 profile에서도 겹치지 않는 부분을 그대로 남겨놓는다.
+# 이 경우 빈 컬럼은 NaN으로 표시한다.
+pd.merge(transaction, user, how='outer')
+
+
+# how='left'는 pd.merge에서 왼쪽에 넣은 DataFrame(transaction)을 기준으로 갯수를 맞춘다.
+# 마찬가지로 빈 값에는 NaN이 들어간다.
+pd.merge(transaction, user, how='left')
+
+
+# how='right'는 left의 정 반대라고 보면 된다.
+pd.merge(transaction, user, how='right')
+
+컬럼명이 다른 경우 자동으로 merge 를 하지 못함.
+
+# user의 Name 칼럼명을 이름으로 수정하겠습니다.
+user.rename(columns={'Name' : '이름'}, inplace = True)
+
+또는
+
+#그리고 다시 transaction과 user를 merge하도록 하겠습니다.
+pd.merge(transaction, user, how='inner', left_on='Name', right_on = '이름')
+
+<join>
+join의 특징은 판다스의 함수로 사용할 수 있는 것이 아닌 데이터프레임의 메소드로만 사용할 수 있다는 점입니다.
+
+(pd.join() 이 없고 table.join() 으로만 사용할 수 있다는 의미입니다.)
+
+join이 불편한 점은 반드시 기준이 되는 왼쪽 데이터프레임은 index가 그 기준이 되어야 한다는 것입니다. 
+따라서, set_index()를 이용하여 기준이 되는 열을 반드시 인덱스로 만들어준 다음 join을 사용해주세요.
+
+transaction.set_index('product', inplace=True)
+product.set_index('product', inplace = True)
+
+transaction.join(product, on='product', how='left')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
